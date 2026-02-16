@@ -1,7 +1,8 @@
 import os
 import time
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, 
-                             QLineEdit, QPushButton, QHBoxLayout, QListWidgetItem, QMenu, QMessageBox)
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLineEdit, QListWidget, 
+                             QListWidgetItem, QLabel, QMenu, QMessageBox, 
+                             QTreeWidget, QTreeWidgetItem, QTabWidget, QTreeWidgetItemIterator)
 from PyQt6.QtCore import pyqtSignal, Qt, QThread, QTimer
 
 class SearchThread(QThread):
@@ -120,7 +121,40 @@ class FileBrowser(QWidget):
         
         action = menu.exec(self.file_list.mapToGlobal(position))
         
-        if action == download_action:
-            filename = item.data(101)
-            self.download_requested.emit(url, filename)
+    def get_current_items(self):
+        """Returns a list of (url, local_path) tuples from the current view."""
+        items = []
+        if self.tabs.currentIndex() == 0: # List View
+            for i in range(self.file_list.count()):
+                item = self.file_list.item(i)
+                if item.flags() & Qt.ItemFlag.ItemIsEnabled:
+                    items.append((item.data(100), item.data(102)))
+        else: # Tree View
+             iterator = QTreeWidgetItemIterator(self.file_tree)
+             while iterator.value():
+                 item = iterator.value()
+                 url = item.data(0, Qt.ItemDataRole.UserRole)
+                 if url:
+                     # Check DB for local path as tree doesn't store it yet (optimization later)
+                     local_path = self.db.get_local_path(url)
+                     items.append((url, local_path))
+                 iterator += 1
+        return items
+
+    def get_next_file(self, current_path):
+        items = self.get_current_items()
+        for i, (url, local_path) in enumerate(items):
+            # Check matches for both URL or Local Path (as current_path could be either)
+            if url == current_path or local_path == current_path:
+                if i + 1 < len(items):
+                    return items[i+1][1] if items[i+1][1] and os.path.exists(items[i+1][1]) else items[i+1][0]
+        return None
+
+    def get_prev_file(self, current_path):
+        items = self.get_current_items()
+        for i, (url, local_path) in enumerate(items):
+            if url == current_path or local_path == current_path:
+                if i - 1 >= 0:
+                     return items[i-1][1] if items[i-1][1] and os.path.exists(items[i-1][1]) else items[i-1][0]
+        return None
 

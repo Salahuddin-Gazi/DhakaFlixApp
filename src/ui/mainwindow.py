@@ -105,6 +105,9 @@ class MainWindow(QMainWindow):
         
         # View 1: Player
         self.player = PlayerWidget()
+        self.player.next_requested.connect(self.play_next_file)
+        self.player.prev_requested.connect(self.play_prev_file)
+        self.player.playlist_requested.connect(lambda: self.switch_view(0))
         self.stack.addWidget(self.player)
         
         # View 2: Downloads
@@ -193,8 +196,25 @@ class MainWindow(QMainWindow):
         self.log_window.append_log("[DONE] Indexing finished or stopped.")
 
     def play_file(self, path):
+        self.current_playing_path = path
         self.switch_view(1)
         self.player.play(path)
+
+    def play_next_file(self):
+        if hasattr(self, 'current_playing_path') and self.current_playing_path:
+            next_path = self.browser.get_next_file(self.current_playing_path)
+            if next_path:
+                self.play_file(next_path)
+            else:
+                self.status_label.setText("End of playlist.")
+
+    def play_prev_file(self):
+        if hasattr(self, 'current_playing_path') and self.current_playing_path:
+            prev_path = self.browser.get_prev_file(self.current_playing_path)
+            if prev_path:
+                self.play_file(prev_path)
+            else:
+                self.status_label.setText("Start of playlist.")
 
     def start_download(self, url, filename):
         self.switch_view(2) # Switch to downloads view
