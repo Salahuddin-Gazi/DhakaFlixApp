@@ -38,6 +38,17 @@ class PlayerWidget(QWidget):
                                    input_default_bindings=True, 
                                    input_vo_keyboard=True,
                                    osc=True) # Enable On-Screen Controller
+                
+                # MPV Property observers
+                @self.mpv.property_observer('time-pos')
+                def time_observer(_name, value):
+                    if value is not None:
+                        self.position_changed.emit(value)
+
+                @self.mpv.property_observer('duration')
+                def duration_observer(_name, value):
+                    if value is not None:
+                        self.duration_changed.emit(value)
             except Exception as e:
                 print(f"Failed to initialize MPV: {e}")
                 self.show_error_placeholder()
@@ -51,17 +62,6 @@ class PlayerWidget(QWidget):
         self.layout().replaceWidget(self.container, msg)
         self.container.deleteLater()
         self.container = None
-                           
-        # MPV Property observers
-        @self.mpv.property_observer('time-pos')
-        def time_observer(_name, value):
-            if value is not None:
-                self.position_changed.emit(value)
-
-        @self.mpv.property_observer('duration')
-        def duration_observer(_name, value):
-            if value is not None:
-                self.duration_changed.emit(value)
 
     def play(self, url):
         self.mpv.play(url)

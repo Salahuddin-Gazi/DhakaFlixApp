@@ -141,8 +141,23 @@ class Builder:
             return True
 
         self.log("libmpv-2.dll not found", "WARN")
+        self.log("Attempting to download libmpv-2.dll...", "INFO")
+        
+        try:
+            # Try to run the download script
+            download_script = Path("download_libmpv.py")
+            if download_script.exists():
+                cmd = f"{sys.executable} download_libmpv.py --auto"
+                result = self.run_command(cmd, check=False)
+                
+                if result and result.returncode == 0 and dll_path.exists():
+                    self.log("Successfully downloaded libmpv-2.dll")
+                    return True
+        except Exception as e:
+            self.log(f"Automatic download failed: {e}", "WARN")
+
         self.log(
-            "Please download from: "
+            "Please download manually from: "
             "https://sourceforge.net/projects/mpv-player-windows/files/libmpv/",
             "WARN"
         )

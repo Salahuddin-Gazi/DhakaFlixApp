@@ -192,8 +192,8 @@ class TestDependencies(unittest.TestCase):
         """Test PyQt6 can be imported."""
         # Only test if installed
         if self._can_import('PyQt6'):
-            import PyQt6
-            self.assertTrue(hasattr(PyQt6, 'QtCore'))
+            import PyQt6.QtCore
+            self.assertTrue(True)
 
     def test_requests_available(self):
         """Test requests can be imported."""

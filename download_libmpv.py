@@ -68,7 +68,11 @@ def download_libmpv():
         print("It's recommended to download manually instead.")
         print()
 
-        response = input("Continue with automatic download? (y/n): ").strip().lower()
+        if "--auto" in sys.argv:
+            print("Automatic mode enabled. Proceeding with download...")
+            response = 'y'
+        else:
+            response = input("Continue with automatic download? (y/n): ").strip().lower()
 
         if response != 'y':
             return False
