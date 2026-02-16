@@ -24,6 +24,7 @@ class PlayerWidget(QWidget):
         super().__init__(parent)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
         # Container for MPV
         self.container = QFrame(self)
@@ -63,17 +64,60 @@ class PlayerWidget(QWidget):
         self.container.deleteLater()
         self.container = None
 
+    def mouseDoubleClickEvent(self, event):
+        if self.window().isFullScreen():
+            self.window().showNormal()
+        else:
+            self.window().showFullScreen()
+
+    def keyPressEvent(self, event):
+        if not self.mpv:
+            return
+            
+        key = event.key()
+        
+        if key == Qt.Key.Key_Space:
+            self.pause()
+        elif key == Qt.Key.Key_F:
+            if self.window().isFullScreen():
+                self.window().showNormal()
+            else:
+                self.window().showFullScreen()
+        elif key == Qt.Key.Key_Escape:
+            if self.window().isFullScreen():
+                self.window().showNormal()
+        elif key == Qt.Key.Key_Left:
+            self.seek(-5)
+        elif key == Qt.Key.Key_Right:
+            self.seek(5)
+        elif key == Qt.Key.Key_Up:
+            try:
+                self.mpv.volume += 5
+            except: pass
+        elif key == Qt.Key.Key_Down:
+            try:
+                self.mpv.volume -= 5
+            except: pass
+        else:
+            super().keyPressEvent(event)
+
     def play(self, url):
-        self.mpv.play(url)
+        if self.mpv:
+            self.mpv.play(url)
+            self.setFocus() # Grab focus for shortcuts
 
     def stop(self):
-        self.mpv.stop()
+        if self.mpv:
+            self.mpv.stop()
 
     def pause(self):
-        self.mpv.pause = not self.mpv.pause
+        if self.mpv:
+            self.mpv.pause = not self.mpv.pause
 
     def seek(self, seconds):
-        self.mpv.seek(seconds)
+        if self.mpv:
+            self.mpv.seek(seconds)
 
     def terminate(self):
-        self.mpv.terminate()
+        if self.mpv:
+            self.mpv.terminate()

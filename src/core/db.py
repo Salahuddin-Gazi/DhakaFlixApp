@@ -66,6 +66,10 @@ class DatabaseHandler:
             ''', (f'%{query}%', f'%{query}%'))
         return self.cursor.fetchall()
 
+    def get_all_files(self):
+        self.cursor.execute('SELECT path, filename, category, parent_dir, downloaded FROM files')
+        return self.cursor.fetchall()
+
     def mark_downloaded(self, url, local_path):
         self.cursor.execute('''
             UPDATE files SET local_path = ?, downloaded = 1 WHERE path = ?

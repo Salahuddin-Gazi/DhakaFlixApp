@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QPushButton, QStackedWidget, QMessageBox, QLabel)
-from PyQt6.QtCore import QThread
+                             QPushButton, QStackedWidget, QMessageBox, QLabel, QProgressBar)
+from PyQt6.QtCore import QThread, QTimer, Qt
 import os
+import time
 from src.core.db import DatabaseHandler
 from src.core.http_client import HttpClient
 from src.core.downloader import DownloadManager
@@ -28,11 +29,19 @@ class MainWindow(QMainWindow):
         self.client = HttpClient()
         self.downloader = DownloadManager(download_dir=os.path.join(os.getcwd(), "downloads"))
         
+        # UI Components
+        from src.ui.log_window import LogWindow
+        self.log_window = LogWindow(self)
+        
         # Threading for Indexer
         self.indexer_thread = IndexerThread(self.client)
         self.client.progress_signal.connect(self.update_status)
         self.client.file_found_signal.connect(self.on_file_found)
         self.client.finished_signal.connect(self.on_scan_finished)
+        
+        # State
+        self.files_processed = 0
+        self.is_indexing = False
         
         # UI Setup
         self.central_widget = QWidget()
@@ -61,8 +70,17 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.btn_downloads)
         
         self.btn_update = QPushButton("Update Index")
-        self.btn_update.clicked.connect(self.start_indexing)
+        self.btn_update.clicked.connect(self.toggle_indexing)
         layout.addWidget(self.btn_update)
+        
+        self.btn_log = QPushButton("Live Log")
+        self.btn_log.clicked.connect(self.show_log_window)
+        layout.addWidget(self.btn_log)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 0) # Marquee
+        self.progress_bar.hide()
+        layout.addWidget(self.progress_bar)
         
         layout.addStretch()
         
@@ -71,6 +89,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status_label)
         
         self.main_layout.addWidget(self.sidebar)
+        
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_timer)
+        self.start_time = 0
 
     def setup_content_area(self):
         self.stack = QStackedWidget()
@@ -95,32 +117,80 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(index)
         if index != 1:
             self.player.stop()
+            
+    def show_log_window(self):
+        self.log_window.show()
+        self.log_window.raise_()
+
+    def toggle_indexing(self):
+        if self.is_indexing:
+            self.stop_indexing()
+        else:
+            self.start_indexing()
 
     def start_indexing(self):
-        if self.indexer_thread.isRunning():
-            return
-        
         reply = QMessageBox.question(self, "Full Rescan", 
-                                     "This will re-scan the entire server (172.16.50.9). It may take a while.\nContinue?",
+                                     "This will re-scan the entire server (172.16.50.9).\nContinue?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         
         if reply == QMessageBox.StandardButton.Yes:
-            # self.db.clear_index() # Keep additive for now, or uncomment to wipe first
+            # self.db.clear_index() # Keep additive loop
             self.indexer_thread.start()
-            self.btn_update.setEnabled(False)
+            
+            self.is_indexing = True
+            self.btn_update.setText("Stop Indexing")
+            self.btn_update.setStyleSheet("background-color: #8B0000; color: white;") # Dark Red
+            
+            self.progress_bar.show()
+            self.start_time = time.time()
+            self.timer.start(1000)
             self.status_label.setText("Scanning server... Please wait.")
+            
+            self.log_window.clear_log()
+            self.log_window.show()
+            self.files_processed = 0
+
+    def stop_indexing(self):
+        self.client.stop()
+        self.status_label.setText("Stopping... Please wait.")
+        self.btn_update.setEnabled(False) # Prevent multi-clicks while thread stops
 
     def update_status(self, msg):
         self.status_label.setText(msg)
+        self.log_window.append_log(f"[STATUS] {msg}")
+        
+    def update_timer(self):
+        elapsed = int(time.time() - self.start_time)
+        mins, secs = divmod(elapsed, 60)
+        self.status_label.setText(f"Scanning... {mins:02d}:{secs:02d} (Files: {self.files_processed})")
 
     def on_file_found(self, data):
         self.db.add_file(data['path'], data['filename'], data['parent_dir'])
+        self.files_processed += 1
+        self.log_window.append_log(f"[FOUND] {data['filename']}")
+        
+        # Periodic Commit (Save progress every 50 files)
+        if self.files_processed % 50 == 0:
+            self.db.commit()
+            self.log_window.append_log("[DB] Auto-saved progress...")
 
     def on_scan_finished(self):
-        self.db.commit()
-        self.status_label.setText("Indexing Complete!")
+        self.db.commit() # Final commit
+        self.timer.stop()
+        self.progress_bar.hide()
+        
+        elapsed = int(time.time() - self.start_time)
+        mins, secs = divmod(elapsed, 60)
+        
+        self.status_label.setText(f"Indexing Complete/Stopped! Files: {self.files_processed}. Time: {mins:02d}:{secs:02d}")
+        
+        self.is_indexing = False
+        self.btn_update.setText("Update Index")
+        self.btn_update.setStyleSheet("") # Reset style
         self.btn_update.setEnabled(True)
+        
         self.browser.load_files() # Refresh view with new files
+        self.log_window.append_log("[DONE] Indexing finished or stopped.")
 
     def play_file(self, path):
         self.switch_view(1)
@@ -145,4 +215,5 @@ class MainWindow(QMainWindow):
             self.indexer_thread.wait()
         self.db.close()
         self.player.terminate()
+        self.log_window.close()
         event.accept()
