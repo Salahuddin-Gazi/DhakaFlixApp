@@ -229,6 +229,20 @@ class MainWindow(QMainWindow):
         self.db.mark_downloaded(url, path)
         QMessageBox.information(self, "Download Complete", f"Downloaded {os.path.basename(path)}")
 
+    def toggle_fullscreen(self):
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
+
+    def showFullScreen(self):
+        super().showFullScreen()
+        self.sidebar.hide()
+
+    def showNormal(self):
+        super().showNormal()
+        self.sidebar.show()
+
     def closeEvent(self, event):
         self.client.stop()
         if self.indexer_thread.isRunning():
