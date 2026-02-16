@@ -1,0 +1,6 @@
+PyQt6
+python-mpv
+requests
+beautifulsoup4
+aiohttp
+pyinstaller
