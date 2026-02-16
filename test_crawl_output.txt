@@ -1,0 +1,14 @@
+Starting crawl...
+Fetched 332 bytes from http://127.0.0.1:8001/DHAKA-FLIX-9/
+Found 3 links in http://127.0.0.1:8001/DHAKA-FLIX-9/
+Found: video.mp4
+Fetched 272 bytes from http://127.0.0.1:8001/DHAKA-FLIX-9/Anime/
+Found 1 links in http://127.0.0.1:8001/DHAKA-FLIX-9/Anime/
+Fetched 300 bytes from http://127.0.0.1:8001/DHAKA-FLIX-9/Movies/
+Found 1 links in http://127.0.0.1:8001/DHAKA-FLIX-9/Movies/
+Found: 2001_A_Space_Odyssey.mkv
+Fetched 294 bytes from http://127.0.0.1:8001/DHAKA-FLIX-9/Anime/One%20Piece/
+Found 1 links in http://127.0.0.1:8001/DHAKA-FLIX-9/Anime/One%20Piece/
+Found: episode1.mkv
+Scan finished. Found 3 files.
+TEST PASSED: Found expected files.

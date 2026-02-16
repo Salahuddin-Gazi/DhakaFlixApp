@@ -1,13 +1,56 @@
+# Virtual Environment
 venv/
+env/
+ENV/
+.venv/
+
+# Python
 __pycache__/
 *.pyc
-.idea/
-.vscode/
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+*.egg
+*.egg-info/
 dist/
 build/
-*.spec
-*.egg-info/
-tests/downloads/
-tests/mock_data/
-test_crawl_output.txt
+
+# IDEs
+.idea/
+.vscode/
+.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
 .DS_Store
+Thumbs.db
+*.bak
+
+# Environment & Config
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Build & Distribution
+dist/
+build/
+DhakaFlixStreamer/
+
+# Test Artifacts
+tests/downloads/
+*.db
+*.mp4
+*.mkv
+
+# Project Specific
+libmpv-2.dll
+*.exe
